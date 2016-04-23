@@ -1,62 +1,55 @@
-To use this plugin in your build, first you must define a file in `~/.gradle/` called `init.gradle`.
+Maven has served us well as a build tool and dependency manager, however as a tool it has not kept up with our rapidly evolving development processes. For example, when we switched to Git we were no longer able to use the maven-release-plugin because while that plugin is supposed to support Git it makes several assumptions about the release process which are not valid for everyones release process. Additionally, using Maven requires you to follow a specific set of conventions and you can't really go outside of those conventions. Gradle is a newer build tool which is supposed to be more powerful than Maven and which should allow us to customize the build process.
 
+To use this plugin in your build, first you must define a file in '~/.gradle/' called 'init.gradle'.
 ```
 allprojects {
-	// Configure Nexus repositories for dependencies
-	ext.RepositoryConfiguration = {
-		maven {
-			name = 'releases'
-			url = uri('https://itnexus.garmin.com/nexus/content/groups/public')
-		}
-		maven {
-			name = 'snapshots'
-			url = uri('https://itnexus.garmin.com/nexus/content/groups/public-snapshots')
-		}
-		mavenLocal()
-	}
-	buildscript.repositories RepositoryConfiguration
-	repositories RepositoryConfiguration
-
-	// Configure Nexus repositories for artifact storage
-	ext.releaseRepositoryDeployer = [
-		url: "https://itnexus.garmin.com/nexus/content/repositories/releases",
-		userName: 'it-snapshot',
-		password: 'r3l3as3'
-	]
-	ext.snapshotRepositoryDeployer = [
-		url: "https://itnexus.garmin.com/nexus/content/repositories/snapshots",
-		userName: 'it-snapshot',
-		password: 'garm1n'
-	]
+    // Configure Maven Repositories to Lookup Dependencies
+    ext.RepositoryConfiguration = {
+        mavenLocal()
+        maven {
+            url = uri('release-repository-url')
+        }
+        maven {
+            url = uri('snapshot-repository-url')
+        }
+    }
+    buildscript.repositories RepositoryConfiguration
+    repositories RepositoryConfiguration
+  
+    // Configure
+    ext.releaseRepositoryDeployer = [
+        url: "release-repository-url",
+        userName: 'release-username',
+        password: '*******'
+    ]
+    ext.snapshotRepositoryDeployer = [
+        url: "snapshot-repository-url",
+        userName: 'snapshot-username',
+        password: '*******'
+    ]
 }
 ```
-
-Configure your project information in your `gradle.properties`.
-
+Configure your project information in your gradle.properties
 ```
-group=com.garmin.project
+group=theGroupId
 artifact=theArtifactName
 version=1.0.0-SNAPSHOT
 name=A human friendly name
 description=Some description of the artifact
-
+Next you need to configure the plugin in your build.gradle.
 ```
-
-Next you need to configure the plugin in your `build.gradle`.
-
 ```
 buildscript {
 	dependencies {
-		classpath 'com.garmin.build.gradle:garmin-gradle-plugin:1.0.0-SNAPSHOT'
+		classpath 'theGroupId:theArtifactName:1.0.0-SNAPSHOT'
 	}
 }
 
-apply plugin: 'garmin-gradle-plugin'
+apply plugin: 'theArtifactName'
 ```
-
-Finally, add relevant dependencies in `build.gradle. In this example, we first include the spring-cloud-starter-parent for spring-cloud versions before configuring dependencies.
-
+Finally, add relevant dependencies in 'build.gradle'. In this example, we first include the spring-cloud-starter-parent for spring-cloud versions before configuring dependencies.
 ```
+build.gradle
 dependencyManagement {
 	imports {
 		mavenBom 'org.springframework.cloud:spring-cloud-starter-parent:Brixton.M4'
@@ -87,4 +80,9 @@ dependencies {
 	testCompile 'org.springframework.boot:spring-boot-starter-test'
 	testCompile 'org.springframework.security:spring-security-test'
 }
+```
+```
+gradle bootRun // Run the application
+gradle test // Execute tests
+gradle releaseGitPush // Package and deploy a release (requires correct repository credentials in ~/.gradle/init.gradle)
 ```
